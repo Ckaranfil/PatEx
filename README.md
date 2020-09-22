@@ -37,13 +37,15 @@ J) The results will be in Ascending or Descending order.
 
 #---------
 
-Recommended: before Running clean the output directory from plain text files. 
 
 
 #---------
 Freebody function paramters. 
+
 #Attention: The script deletes the freebody.dat file (if it exists) before starting to produce output. 
+
 #FUNCTION PatEx_Freebody(Sum_Point, Chosen_Ones, FB_CID, FB_File_Name)
+
 PatEx_Freebody(A,B,C,D)
 A) Summation Point, can be a node or a virtual point
 B) Selected Nodes and Elements
