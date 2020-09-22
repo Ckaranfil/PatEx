@@ -1,6 +1,6 @@
 #FUNCTION PatEx(Type , Num_Locations, Num_Components, Elements_List, Locations, Components, CID, File_Name, Entity_Sort, Value_Sort, Sort_Type)
 
-#----------Stress_Frame function Parameters
+#----------Patex function Parameters
 
 PatEx(A,B,C,D,E,F,G,H) Parameters
 
