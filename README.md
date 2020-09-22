@@ -1,3 +1,6 @@
+This PCL Script extracts Shell Stresses/Forces, Grid Point Forces/Moments, Beam/Bar Forces and Freebody Internal Forces from MSC Patran. It is quite useful in case you have thousands of locadceses which are alwys changing in short period of time. 
+
+
 #FUNCTION PatEx(Type , Num_Locations, Num_Components, Elements_List, Locations, Components, CID, File_Name, Entity_Sort, Value_Sort, Sort_Type)
 
 #----------Patex function Parameters
