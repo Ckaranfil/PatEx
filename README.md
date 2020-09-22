@@ -50,7 +50,11 @@ Freebody function paramters.
 #FUNCTION PatEx_Freebody(Sum_Point, Chosen_Ones, FB_CID, FB_File_Name)
 
 PatEx_Freebody(A,B,C,D)
+
 A) Summation Point, can be a node or a virtual point
+
 B) Selected Nodes and Elements
+
 C) Coordinate System to transfer the loads
+
 D) Output File Name
