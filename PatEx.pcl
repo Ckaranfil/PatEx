@@ -1,0 +1,631 @@
+##########################################################################################################                                                                                                   
+#PPPPPPPPPPPPPPPPP                           tttt          EEEEEEEEEEEEEEEEEEEEEE                    
+#P::::::::::::::::P                       ttt:::t          E::::::::::::::::::::E                    
+#P::::::PPPPPP:::::P                      t:::::t          E::::::::::::::::::::E                    
+#PP:::::P     P:::::P                     t:::::t          EE::::::EEEEEEEEE::::E                    
+#  P::::P     P:::::Paaaaaaaaaaaaa  ttttttt:::::ttttttt      E:::::E       EEEEEExxxxxxx      xxxxxxx
+#  P::::P     P:::::Pa::::::::::::a t:::::::::::::::::t      E:::::E              x:::::x    x:::::x 
+#  P::::PPPPPP:::::P aaaaaaaaa:::::at:::::::::::::::::t      E::::::EEEEEEEEEE     x:::::x  x:::::x  
+#  P:::::::::::::PP           a::::atttttt:::::::tttttt      E:::::::::::::::E      x:::::xx:::::x   
+#  P::::PPPPPPPPP      aaaaaaa:::::a      t:::::t            E:::::::::::::::E       x::::::::::x    
+#  P::::P            aa::::::::::::a      t:::::t            E::::::EEEEEEEEEE        x::::::::x     
+#  P::::P           a::::aaaa::::::a      t:::::t            E:::::E                  x::::::::x     
+#  P::::P          a::::a    a:::::a      t:::::t    tttttt  E:::::E       EEEEEE    x::::::::::x    
+#PP::::::PP        a::::a    a:::::a      t::::::tttt:::::tEE::::::EEEEEEEE:::::E   x:::::xx:::::x   
+#P::::::::P        a:::::aaaa::::::a      tt::::::::::::::tE::::::::::::::::::::E  x:::::x  x:::::x  
+#P::::::::P         a::::::::::aa:::a       tt:::::::::::ttE::::::::::::::::::::E x:::::x    x:::::x 
+#PPPPPPPPPP          aaaaaaaaaa  aaaa         ttttttttttt  EEEEEEEEEEEEEEEEEEEEEExxxxxxx      xxxxxxx
+#########################################################################################################  
+#Last Update : 27.01.2021
+#V2.2
+#For latest version and sample/help files                                                                                             
+FUNCTION PatEx(Type , Num_Locations, Num_Components, Elements_List, Locations, Components, CID, File_Name, Entity_Sort, Value_Sort, Sort_Type)
+INTEGER i_ncases
+    INTEGER iv_lcids(VIRTUAL)
+    INTEGER iv_nsub(VIRTUAL)
+    INTEGER err	
+    INTEGER i,k,m
+    INTEGER i_ntargets
+    INTEGER i_nattribs
+    INTEGER i_return_value
+    STRING First_Case[100]
+    STRING Load_Cases[VIRTUAL](VIRTUAL)
+    STRING Static_Subcase[VIRTUAL](VIRTUAL)
+    STRING Stress_Tensor[VIRTUAL](VIRTUAL)
+    STRING Empty_Variable[VIRTUAL](VIRTUAL)
+    STRING At_Z1[VIRTUAL](VIRTUAL)
+    STRING At_Z2[VIRTUAL](VIRTUAL)
+    STRING Non_Layered[VIRTUAL](VIRTUAL)
+    STRING Force_Resultant[VIRTUAL](VIRTUAL)
+    STRING Shell_Forces[VIRTUAL](VIRTUAL)
+    STRING Bar_Forces[VIRTUAL](VIRTUAL)
+    STRING Beam_Forces[VIRTUAL](VIRTUAL)
+    STRING Translational[VIRTUAL](VIRTUAL)
+    STRING Grid_Point_Forces[VIRTUAL](VIRTUAL)
+    STRING Grid_Point_Moments[VIRTUAL](VIRTUAL)
+    STRING Internal_Forces[VIRTUAL](VIRTUAL)
+    STRING At_Center[VIRTUAL](VIRTUAL)
+	STRING s_title[99]
+	STRING s_report_name[2]
+    STRING s_entity_type[16]
+	STRING sa_targets[256](1)
+	STRING sa_attributes[VIRTUAL](VIRTUAL)
+	STRING Column_Type[80]
+
+    #
+    #---- FUNCTION PARAMETERS START 
+    STRING Elements_List[]
+    STRING CID[]
+    STRING File_Name[]
+	STRING Locations[]()
+	STRING Components[]()
+	INTEGER Num_Components
+	INTEGER Num_Locations
+	STRING Value_Sort[]
+	STRING Type[]
+	STRING Entity_Sort[]
+	STRING Sort_Type[]
+	
+	
+    #---- END
+       
+    i_return_value = @
+        res_utl_get_loadcases(  i_ncases, @ 
+                                iv_lcids, @
+                                iv_nsub )
+      err = SYS_ALLOCATE_STRING(Load_Cases,80)
+    err = SYS_ALLOCATE_ARRAY (Load_Cases,1,i_ncases-1)
+ 
+    err = SYS_ALLOCATE_STRING(sa_attributes,80)
+	err = SYS_ALLOCATE_ARRAY (sa_attributes,1,50) 
+	
+		err = SYS_ALLOCATE_STRING(Static_Subcase,15)
+    err = SYS_ALLOCATE_ARRAY (Static_Subcase,1,i_ncases-1)
+	
+	
+
+#Extract First LoadCase name from the results
+ i_return_value =                                 @
+   db_get_load_case_title                         @
+      (  iv_lcids(1),                             @
+         s_title )
+	    First_Case = s_title
+    	   $ dump First_Case	
+
+
+    FOR (i=1 TO i_ncases-1)
+#Extract other load case names
+ i_return_value =                                 @
+   db_get_load_case_title                         @
+      (  iv_lcids(i+1),                           @
+         s_title )
+		
+    	    Load_Cases (i)      = s_title
+		    Static_Subcase (i)  = "Static Subcase"
+
+    END FOR
+	
+SWITCH (Type)	
+
+
+	CASE ("SS_Z1")
+
+# SS First Load Case
+i_return_value = @
+res_data_load_dbresult( 0, "Centroidal", "Tensor", First_Case, @
+ "Static Subcase", "Stress Tensor", "", "At Z1", "", CID,  @
+"DeriveAverage", "All", "ShapeFunc", "", 0. )
+dump i_return_value
+
+# SS Remaining Lod Cases
+
+    err = SYS_ALLOCATE_STRING(Stress_Tensor,15)
+    err = SYS_ALLOCATE_ARRAY (Stress_Tensor,1,i_ncases-1)
+    
+    err = SYS_ALLOCATE_STRING(Empty_Variable,1)
+    err = SYS_ALLOCATE_ARRAY (Empty_Variable,1,i_ncases-1)
+    
+    err = SYS_ALLOCATE_STRING(At_Z1,5)
+    err = SYS_ALLOCATE_ARRAY (At_Z1,1,i_ncases-1)
+
+ FOR (i=1 TO i_ncases-1)
+#Extract other load case names
+
+Stress_Tensor (i)   = "Stress Tensor"
+Empty_Variable (i)  = ""
+ At_Z1 (i)           = "At Z1"
+ 
+    END FOR
+
+
+
+i_return_value = @
+res_data_dbres_list( 0, "Centroidal", "Tensor", i_ncases-1, Load_Cases, @
+Static_Subcase, Stress_Tensor, Empty_Variable, At_Z1 )
+dump i_return_value
+
+Column_Type="ReportTColumn:"
+
+	CASE ("SS_Z2")
+
+# SS First Load Case
+i_return_value = @
+res_data_load_dbresult( 0, "Centroidal", "Tensor", First_Case, @
+ "Static Subcase", "Stress Tensor", "", "At Z2", "", CID,  @
+"DeriveAverage", "All", "ShapeFunc", "", 0. )
+dump i_return_value
+
+# SS Remaining Lod Cases
+
+err = SYS_ALLOCATE_STRING(Stress_Tensor,15)
+    err = SYS_ALLOCATE_ARRAY (Stress_Tensor,1,i_ncases-1)
+    
+    err = SYS_ALLOCATE_STRING(Empty_Variable,1)
+    err = SYS_ALLOCATE_ARRAY (Empty_Variable,1,i_ncases-1)
+    
+    err = SYS_ALLOCATE_STRING(At_Z2,5)
+    err = SYS_ALLOCATE_ARRAY (At_Z2,1,i_ncases-1)
+	
+	 FOR (i=1 TO i_ncases-1)
+#Extract other load case names
+
+Stress_Tensor (i)   = "Stress Tensor"
+Empty_Variable (i)  = ""	
+At_Z2 (i)           = "At Z2"	    
+
+    END FOR
+
+
+i_return_value = @
+res_data_dbres_list( 0, "Centroidal", "Tensor", i_ncases-1, Load_Cases, @
+Static_Subcase, Stress_Tensor, Empty_Variable, At_Z2 )
+dump i_return_value
+
+Column_Type="ReportTColumn:"
+
+	CASE ("GF")
+	
+	    i_return_value = @
+        res_utl_get_loadcases(  i_ncases, @ 
+                                iv_lcids, @
+                                iv_nsub )
+	
+# GF First Load Case
+i_return_value = @
+res_data_load_dbresult( 0, "ENodal", "Vector", First_Case, @
+ "Static Subcase", "Grid Point Forces", "Internal Forces", "(NON-LAYERED)", "", CID,  @
+"DeriveAverage", "Element", "ShapeFunc", "", 0. )
+
+
+	
+	    err = SYS_ALLOCATE_STRING(Grid_Point_Forces,20)
+    err = SYS_ALLOCATE_ARRAY (Grid_point_Forces,1,i_ncases-1)
+	
+	    err = SYS_ALLOCATE_STRING(Internal_Forces,20)
+    err = SYS_ALLOCATE_ARRAY (Internal_Forces,1,i_ncases-1)
+	
+	    err = SYS_ALLOCATE_STRING(Non_Layered,20)
+    err = SYS_ALLOCATE_ARRAY (Non_Layered,1,i_ncases-1)
+
+
+ FOR (i=1 TO i_ncases-1)
+#Extract other load case names
+
+Grid_Point_Forces (i)   = "Grid Point Forces"
+Internal_Forces (i)     = "Internal Forces"	
+Non_layered (i)     = "(NON-LAYERED)"	    
+
+    END FOR
+
+
+# GF Remaining Lod Cases
+
+i_return_value = @
+res_data_dbres_list( 0, "ENodal", "Vector", i_ncases-1, Load_Cases, @
+Static_Subcase, Grid_Point_Forces, Internal_forces, Non_Layered )
+
+Column_Type="ReportVColumn:"
+
+
+	CASE ("GM")
+#GM First Load Case
+i_return_value = @
+res_data_load_dbresult( 0, "ENodal", "Vector", First_Case, @
+ "Static Subcase", "Grid Point Moments", "Internal Forces", "(NON-LAYERED)", "", CID,  @
+"DeriveAverage", "Element", "ShapeFunc", "", 0. )
+dump i_return_value
+
+
+
+# GM Remaining Lod Cases
+
+
+	   err = SYS_ALLOCATE_STRING(Grid_Point_Moments,20)
+   err = SYS_ALLOCATE_ARRAY (Grid_Point_Moments,1,i_ncases-1)
+       err = SYS_ALLOCATE_STRING(Internal_Forces,20)
+    err = SYS_ALLOCATE_ARRAY (Internal_Forces,1,i_ncases-1)
+	
+	    err = SYS_ALLOCATE_STRING(Non_Layered,20)
+    err = SYS_ALLOCATE_ARRAY (Non_Layered,1,i_ncases-1)
+ 
+ 
+ FOR (i=1 TO i_ncases-1)
+#Extract other load case names
+
+Grid_Point_Moments (i)  = "Grid Point Moments"
+Internal_Forces (i)     = "Internal Forces"	
+Non_layered (i)     = "(NON-LAYERED)"	    
+
+    END FOR
+	
+i_return_value = @
+res_data_dbres_list( 0, "ENodal", "Vector", i_ncases-1, Load_Cases, @
+Static_Subcase, Grid_Point_Moments, Internal_forces, Non_Layered )	
+dump i_return_value
+Column_Type="ReportVColumn:"
+
+
+	CASE ("SF")
+#SF First Load Case    
+   i_return_value = @
+            res_data_load_dbresult( 0, "Centroidal", "Tensor", First_Case, @
+                "Static Subcase", "Shell Forces", "Force Resultant", "(NON-LAYERED)", "", CID,  @
+                "DeriveAverage", "All", "ShapeFunc", "", 0. )
+
+        
+	
+	    err = SYS_ALLOCATE_STRING(Shell_Forces,20)
+    err = SYS_ALLOCATE_ARRAY (Shell_Forces,1,i_ncases-1)
+	    err = SYS_ALLOCATE_STRING(Force_Resultant,20)
+    err = SYS_ALLOCATE_ARRAY (Force_Resultant,1,i_ncases-1)
+	    err = SYS_ALLOCATE_STRING(Non_Layered,20)
+    err = SYS_ALLOCATE_ARRAY (Non_Layered,1,i_ncases-1)
+	 
+	 
+	 FOR (i=1 TO i_ncases-1)
+#Extract other load case names
+
+Shell_Forces (i)    = "Shell Forces"
+Force_Resultant (i) = "Force Resultant"
+Non_layered (i)     = "(NON-LAYERED)"	
+		  END FOR
+		
+		i_return_value = @
+            res_data_dbres_list( 0, "Centroidal", "Tensor", i_ncases-1, Load_Cases, @
+                Static_Subcase, Shell_Forces, Force_Resultant, Non_Layered )
+    dump i_return_value    
+Column_Type="ReportTColumn:"
+
+
+	CASE ("BeamF")
+        i_return_value = @
+            res_data_load_dbresult( 0, "Centroidal", "Vector", First_Case, @
+                "Static Subcase", "Beam Forces", "Translational", "At Center", "", CID,  @
+                "DeriveAverage", "All", "ShapeFunc", "", 0. )
+        $dump i_return_value
+       
+	   
+
+	    err = SYS_ALLOCATE_STRING(Beam_Forces,20)
+    err = SYS_ALLOCATE_ARRAY (Beam_Forces,1,i_ncases-1)
+	
+	    err = SYS_ALLOCATE_STRING(Translational,20)
+    err = SYS_ALLOCATE_ARRAY (Translational,1,i_ncases-1)
+    
+    err = SYS_ALLOCATE_STRING(At_Center,20)
+    err = SYS_ALLOCATE_ARRAY (At_Center,1,i_ncases-1)
+	
+		 FOR (i=1 TO i_ncases-1)
+#Extract other load case names
+
+Beam_Forces (i)     = "Beam Forces"
+Translational (i)   = "Translational"
+At_Center (i)       = "At Center"	
+		  END FOR
+	  
+
+	  i_return_value = @
+            res_data_dbres_list( 0, "Centroidal", "Vector", i_ncases-1, Load_Cases, @
+                Static_Subcase, Beam_Forces, Translational, At_Center )
+    dump i_return_value
+Column_Type="ReportVColumn:"
+    
+
+	CASE ("BarF")
+        i_return_value = @
+            res_data_load_dbresult( 0, "Centroidal", "Vector", First_Case, @
+                "Static Subcase", "Bar Forces", "Translational", "At Center", "", CID,  @
+                "DeriveAverage", "All", "ShapeFunc", "", 0. )
+        $dump i_return_value
+		
+		
+		
+		err = SYS_ALLOCATE_STRING(Bar_Forces,20)
+    err = SYS_ALLOCATE_ARRAY (Bar_Forces,1,i_ncases-1)
+	    err = SYS_ALLOCATE_STRING(At_Center,20)
+    err = SYS_ALLOCATE_ARRAY (At_Center,1,i_ncases-1)
+	    err = SYS_ALLOCATE_STRING(Translational,20)
+    err = SYS_ALLOCATE_ARRAY (Translational,1,i_ncases-1)
+		
+				 FOR (i=1 TO i_ncases-1)
+#Extract other load case names
+
+            Bar_Forces (i)      = "Bar Forces"
+Translational (i)   = "Translational"
+At_Center (i)       = "At Center"	
+		  END FOR
+		        i_return_value = @
+            res_data_dbres_list( 0, "Centroidal", "Vector", i_ncases-1, Load_Cases, @
+                Static_Subcase, Bar_Forces, Translational, At_Center )
+    dump i_return_value
+Column_Type="ReportVColumn:"
+
+
+
+
+
+
+END SWITCH
+
+#---------------------------------------------------------------------
+
+
+# Argument initialization
+
+k=1
+s_report_name = ""
+s_entity_type = "Elements"
+i_ntargets = 1
+sa_targets(1) = Elements_List
+
+sa_attributes(k) = "ReportType:Full" 
+sa_attributes(k=k+1) = "ReportTitle:$PRODUCT - Analysis Code: $CODE_NAME" 
+sa_attributes(k=k+1) = "ReportTitle:" 
+sa_attributes(k=k+1) = "ReportTitle:Load Case: $LC_NAME, $SC_NAME" 
+sa_attributes(k=k+1) = "ReportTitle:" 
+sa_attributes(k=k+1) = "ReportTitle:Result $PRES" // @
+ "_NAME, $SRES_NAME - Layer $LYR_NAME" 
+ sa_attributes(k=k+1) = "ReportTitle:" 
+sa_attributes(k=k+1) = "ReportTitle:Entity:" // Type 
+sa_attributes(k=k+1) = "ReportHeader:Page $PAGE" 
+sa_attributes(k=k+1) = "ReportFooter:$DATE" 
+sa_attributes(k=k+1) = "ReportPage:Height=52,Wid" // @
+ "th=128,TopMargin=5,LeftMargin=8,BottomMargin=5" 
+sa_attributes(k=k+1) = "ReportPagination:OFF"
+sa_attributes(k=k+1)= "ReportPageNumber:1" 
+sa_attributes(k=k+1)= "ReportPageAlignment:Center" 
+sa_attributes(k=k+1)= Column_Type//",Entity ID,ID,%I9%"
+
+IF (Type=="GF" || Type == "GM") Then
+sa_attributes(k=k+1)= Column_Type//",Node ID,NID,%I9%"
+END IF
+
+For (m=1 to Num_Locations)
+sa_attributes(k=k+1)= Column_Type//"," // Locations(m) // " Location," // Locations(m) // ",%F12.2%" 
+End for
+
+
+For (m=1 to Num_Components)
+
+sa_attributes(k=k+1)= Column_Type//"," // Components(m) // " Component," // Components(m) // ",%F12.5%" 
+End for
+
+
+
+sa_attributes(k=k+1)= Column_Type//",CID,CID,%I8%" 
+sa_attributes(k=k+1)= "EntitySort:" // Entity_Sort 
+sa_attributes(k=k+1)= "ValueSort:" //Value_Sort// "," // Sort_Type //",Algebraic" 
+sa_attributes(k=k+1)= "ColumnHeaders:ON"
+sa_attributes(k=k+1)= "Filter:None" 
+sa_attributes(k=k+1)= "ScaleFactor:1."
+i_nattribs = k 
+
+#dump sa_attributes
+
+
+
+#---------------------------------------------------------------------
+    
+    # Creating a report
+
+    i_return_value = @
+        res_display_report_create @
+            (   s_report_name, @
+                s_entity_type, @
+                i_ntargets, @
+                sa_targets, @
+                i_nattribs, @
+                sa_attributes )
+  # dump i_return_value
+ 
+    
+  SWITCH (Type)
+  
+CASE ("SS_Z1")  
+    
+        #---------------------------------------------------------------------
+        # Writing to the file
+        i_return_value = @
+            res_display_report_write( "", 0, "Tensor", "Centroidal", "Overwrite",  @
+                File_Name )
+        $dump i_return_value
+        #---------------------------------------------------------------------
+	
+	
+CASE ("SS_Z2")  
+    
+        #---------------------------------------------------------------------
+        # Writing to the file
+        i_return_value = @
+            res_display_report_write( "", 0, "Tensor", "Centroidal", "Overwrite",  @
+                File_Name )
+        $dump i_return_value
+        #---------------------------------------------------------------------
+		
+		
+CASE ("GF")  
+    
+i_return_value = @
+res_display_report_write( "", 0, "Vector", "ENodal", "Overwrite",  @
+File_Name )
+$dump i_return_value				
+		
+		
+CASE ("GM")
+i_return_value = @
+res_display_report_write( "", 0, "Vector", "ENodal", "Overwrite",  @
+File_Name )
+$dump i_return_value
+		
+CASE ("SF")
+ 
+        #---------------------------------------------------------------------
+        # Writing to the file
+          i_return_value = @
+            res_display_report_write( "", 0, "Tensor", "Centroidal", "Overwrite",  @
+                File_Name )
+        dump i_return_value
+        #---------------------------------------------------------------------
+    
+ 
+
+CASE ("BeamF")
+       i_return_value = @
+            res_display_report_write( "", 0, "Vector", "Centroidal", "Overwrite",  @
+                File_Name )
+        $dump i_return_value
+
+
+CASE ("BarF")
+   i_return_value = @
+            res_display_report_write( "", 0, "Vector", "Centroidal", "Overwrite",  @
+                File_Name )
+        $dump i_return_value
+
+
+		
+END SWITCH
+
+
+    
+    
+    SYS_FREE_STRING (Load_Cases)
+    SYS_FREE_STRING (Static_Subcase)
+    SYS_FREE_STRING (Stress_Tensor)
+    SYS_FREE_STRING (Empty_Variable)
+    SYS_FREE_STRING (At_Z1)
+    SYS_FREE_STRING (At_Z2)
+    SYS_FREE_STRING (Shell_Forces)
+    SYS_FREE_STRING (Non_Layered)
+    SYS_FREE_STRING (Force_Resultant)
+    SYS_FREE_STRING (Bar_Forces)
+    SYS_FREE_STRING (Beam_Forces)
+    SYS_FREE_STRING (Translational)
+    SYS_FREE_STRING (At_Center)
+    SYS_FREE_STRING (Grid_Point_Forces)
+    SYS_FREE_STRING (Grid_Point_Moments)
+    SYS_FREE_STRING (Internal_Forces)        
+    SYS_FREE_ARRAY (Load_Cases)
+    SYS_FREE_ARRAY (Static_Subcase)
+    SYS_FREE_ARRAY (Stress_Tensor)
+    SYS_FREE_ARRAY (Empty_Variable)
+    SYS_FREE_ARRAY (At_Z1)
+    SYS_FREE_ARRAY (At_Z2)
+    SYS_FREE_ARRAY (Shell_Forces)
+    SYS_FREE_ARRAY (Non_Layered)
+    SYS_FREE_ARRAY (Force_Resultant)
+    SYS_FREE_ARRAY (Bar_Forces)
+    SYS_FREE_ARRAY (Beam_Forces)
+    SYS_FREE_ARRAY (At_Center)
+    SYS_FREE_ARRAY (Translational)
+    SYS_FREE_ARRAY (Grid_Point_Forces)
+    SYS_FREE_ARRAY (Grid_Point_Moments)
+    SYS_FREE_ARRAY (Internal_Forces)
+	
+END FUNCTION
+
+#---------------------------------------------------------------------
+
+FUNCTION PatEx_Freebody(Sum_Point, Chosen_Ones, FB_CID, FB_File_Name)
+INTEGER i_return_value
+INTEGER i_ncases
+INTEGER iv_lcids(VIRTUAL)
+INTEGER iv_nsub(VIRTUAL)
+INTEGER i
+STRING FB_db_name[780]
+STRING s_title[99]
+#---- FUNCTION PARAMETERS START 
+STRING Sum_Point[]
+STRING FB_CID[]
+STRING Chosen_Ones[]
+STRING FB_File_Name[]
+#---- END
+
+
+INTEGER err
+
+err=file_delete(FB_File_Name)
+
+err= db_name_get(FB_db_name)
+
+
+FB_db_name = str_substr(FB_db_name, 1, str_length(FB_db_name)-3)
+
+FB_db_name = FB_db_name // "_freebody_data.dat"
+
+$dump FB_db_name
+err=file_delete(FB_db_name)
+
+    i_return_value = @
+        res_utl_get_loadcases(  i_ncases, @ 
+                                iv_lcids, @
+                                iv_nsub )
+
+
+
+
+#err=db_count_load_cases(FB_lc_count)
+
+#db_get_all_load_cases()
+$FOR (i=1 TO i_ncases)
+FOR (i=1 TO i_ncases)
+	
+   db_get_load_case_title                         @
+      (  iv_lcids(i),                             @
+         s_title )
+$dump s_title	 	
+IF ( i ==1 ) Then
+display_freebody_data3( "Interface Loads", s_title,  @
+"Static Subcase", 2, "Internal Forces", "Summation Point", Sum_Point,  @
+"Transform Results", TRUE, FB_CID, "Entity List", Chosen_Ones, @
+ "Force", "Component", [TRUE, TRUE, TRUE], [1, 2, 3], "Planar Data", FALSE, "" @
+, "Scale Results", FALSE, 0.1, "Vector Style", TRUE, "Head", 0.25,  @
+"Zero Tolerance", TRUE, 0.0099999998, "Display Values", TRUE, "Fixed", 2,  @
+"Display Title", TRUE, 7, ["", "10 Pts", "Upper Left"], "Automatic Print",  @
+FALSE, "Interface Contributions", FALSE, "Print Report", TRUE, FALSE, "" )
+Else
+
+display_freebody_data3( "Interface Loads", s_title,  @
+"Static Subcase", 2, "Internal Forces", "Summation Point", Sum_Point,  @
+"Transform Results", TRUE, FB_CID, "Entity List", Chosen_Ones, @
+ "Force", "Component", [TRUE, TRUE, TRUE], [1, 2, 3], "Planar Data", FALSE, "" @
+, "Scale Results", FALSE, 0.1, "Vector Style", TRUE, "Head", 0.25,  @
+"Zero Tolerance", TRUE, 0.0099999998, "Display Values", TRUE, "Fixed", 2,  @
+"Display Title", TRUE, 7, ["", "10 Pts", "Upper Left"], "Automatic Print",  @
+FALSE, "Interface Contributions", FALSE, "Print Report", TRUE, TRUE, "" )
+
+
+
+
+
+
+
+End IF
+
+END FOR
+
+err = file_copy(FB_db_name, FB_File_Name)
+
+err=file_delete(FB_db_name)
+
+END FUNCTION
